@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>RemoteDesk</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #1e1e1e;
+      color: #e4e4e4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .dashboard {
+      width: 100%;
+      max-width: 900px;
+      background: #2c2c2c;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #ff3c3c;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    .info-section {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 650px;
+      gap: 15px;
+      margin-bottom: 30px;
+      color: #b3b3b3;
+    }
+
+    .info-section p {
+      font-size: 1.1rem;
+    }
+
+    .music-display {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .album-art {
+      width: 250px;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 15px rgba(255, 60, 60, 0.3);
+    }
+
+    .track-info {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .track-status {
+      color: #aaa;
+      font-size: 1rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 650px;
+    }
+
+    button {
+      background: #ff3c3c;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 25px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 120px;
+      box-shadow: 0 4px 12px rgba(255, 60, 60, 0.3);
+    }
+
+    button:hover {
+      background: #e23232;
+    }
+
+    .volume-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .slider-container {
+      position: relative;
+      width: 300px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      background: #444;
+      border-radius: 8px;
+      outline: none;
+      transition: background 0.3s;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      background: #ff3c3c;
+      border-radius: 8px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    footer {
+      font-size: 0.9rem;
+      color: #777;
+      margin-top: 30px;
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #ff3c3c;
+      padding: 12px;
+      color: white;
+      border-radius: 10px;
+      display: none;
+      font-size: 1rem;
+      box-shadow: 0 4px 10px rgba(255, 60, 60, 0.3);
+    }
+
+    @media (max-width: 600px) {
+      .dashboard {
+        padding: 15px;
+        gap: 15px;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      .album-art {
+        width: 180px;
+        height: 180px;
+      }
+
+      .controls button {
+        font-size: 1rem;
+      }
+
+      .volume-controls {
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1>RemoteDesk</h1>
+
+    <div class="info-section" id="extra-stats">
+      <p id="uptime">⏱️ Tiempo encendido: ...</p>
+      <p id="music-time">🎶 Música reproducida: ...</p>
+    </div>
+
+    <div class="music-display">
+      <img id="album-img" class="album-art" src="{{ track.album_image if track else '' }}" alt="Carátula del álbum">
+      <p id="track-name" class="track-info">
+        {% if track %} 
+          {{ track.name }} — {{ track.artist }}
+        {% else %} 
+          No hay canción en reproducción. 
+        {% endif %}
+      </p>
+      <p id="track-time" class="track-status">
+        {% if track %} 
+          Tiempo: {{ track.time_played | format_time }} / {{ track.duration | format_time }} minutos
+        {% endif %}
+      </p>
+      <p id="track-state" class="track-status"></p>
+    </div>
+
+    <div class="controls">
+      {% if not token_info %}
+        <button onclick="location.href='/login'">Login con Spotify</button>
+      {% else %}
+        <button onclick="post('/previous')">⏮️</button>
+        <button onclick="post('/play_pause')">⏯️</button>
+        <button onclick="post('/next')">⏭️</button>
+      {% endif %}
+    </div>
+
+    <div class="volume-controls">
+      <button onclick="setVolume(0)">🔈 Mínimo</button>
+      <div class="slider-container">
+        <input class="slider" id="volumeSlider" type="range" min="0" max="100" value="{{ volume }}" onchange="updateVolume(this.value)">
+      </div>
+      <button onclick="setVolume(100)">🔊 Máximo</button>
+    </div>
+
+    <div class="controls">
+      <button onclick="post('/poweroff')">🛑 Apagar</button>
+      <button onclick="post('/reboot')">🔁 Reiniciar</button>
+      <button onclick="post('/logout')">🚪 Cerrar sesión</button>
+      <button onclick="post('/hibernate')">🌙 Hibernar</button>
+      <button onclick="captureScreenshot()">📸 Captura</button>
+      <button onclick="startLiveScreen()">🎥 Transmitir Pantalla</button>
+    </div>
+
+    <footer>
+      Desarrollado por <strong>Alejandro Amarillo</strong> — Proyecto: <strong>RemoteDesk</strong>
+    </footer>
+  </div>
+
+  <div id="notification" class="notification"></div>
+
+  <script>
+    function post(url) {
+      fetch(url, { method: 'POST' })
+        .then(res => res.json())
+        .then(json => {
+          console.log(json);
+          showNotification(`Acción realizada: ${url}`);
+        })
+        .catch(err => console.error('Error:', err));
+    }
+
+    function updateVolume(value) {
+      fetch('/set_volume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level: value })
+      }).then(() => {
+        document.getElementById("volumeSlider").value = value;
+      });
+    }
+
+    function setVolume(value) {
+      updateVolume(value);
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateTrackInfo() {
+      setInterval(() => {
+        fetch('/current_track')
+          .then(res => res.json())
+          .then(track => {
+            if (!track.error) {
+              document.getElementById("track-name").textContent = `${track.name} — ${track.artist}`;
+              document.getElementById("track-time").textContent = `Tiempo: ${formatTime(track.time_played)} / ${formatTime(track.duration)} minutos`;
+              document.getElementById("album-img").src = track.album_image;
+              document.getElementById("track-state").textContent = track.playing ? "🟢 En reproducción" : "⏸️ En pausa";
+            } else {
+              document.getElementById("track-name").textContent = "No hay canción en reproducción.";
+              document.getElementById("track-time").textContent = "";
+              document.getElementById("track-state").textContent = "";
+              document.getElementById("album-img").src = "";
+            }
+          });
+      }, 1000);
+    }
+
+    function updateStats() {
+      setInterval(() => {
+        fetch('/stats')
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById("uptime").textContent = "⏱️ Tiempo encendido: " + formatTime(data.uptime);
+            document.getElementById("music-time").textContent = "🎶 Música reproducida: " + formatTime(data.music_time);
+          });
+      }, 1000);
+    }
+
+    function captureScreenshot() {
+      window.open('/screenshot', '_blank');
+    }
+
+    function startLiveScreen() {
+      fetch('/start_screen_stream')
+        .then(res => res.json())
+        .then(json => {
+          showNotification(json.message);
+        });
+    }
+
+    function showNotification(message) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.style.display = 'block';
+      setTimeout(() => notification.style.display = 'none', 4000);
+    }
+
+    updateTrackInfo();
+    updateStats();
+  </script>
+</body>
+</html>
