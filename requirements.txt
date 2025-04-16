@@ -5,3 +5,4 @@ wakeonlan==3.0.0
 pycaw==20230407
 comtypes==1.1.10
 spotipy==2.22.1
+Werkzeug==2.1.0
